@@ -6,7 +6,6 @@ import 'package:ktxhttp/com/ktx/net/net_result.dart';
 import 'package:ktxhttp/com/ktx/net/paser.dart';
 import 'multipartfile_covert.dart';
 
-
 class NetManager {
   String _baseUrl;
   Dio _dio;
@@ -39,6 +38,13 @@ class NetManager {
     ));
   }
 
+  void _setbadCertificate() {
+    (_dio.httpClientAdapter as DefaultHttpClientAdapter).onHttpClientCreate =
+        (client) {
+      client.badCertificateCallback = (arg1, arg2, arg3) => true;
+    };
+  }
+
   ///设置代理
   _setProxy(String ip, String port) {
     (_dio.httpClientAdapter as DefaultHttpClientAdapter).onHttpClientCreate =
@@ -55,10 +61,11 @@ class NetManager {
 
   Future<NetResult<T>> get<T>(String path,
       {Map<String, dynamic> params,
-        String baseUrl,
-        Options options,
-        CancelToken cancelToken,
-        ProgressCallback onReceiveProgress, Parser parser}) async {
+      String baseUrl,
+      Options options,
+      CancelToken cancelToken,
+      ProgressCallback onReceiveProgress,
+      Parser parser}) async {
     String httpBaseUrl = baseUrl ?? _baseUrl;
     Response response = await _dio.get(httpBaseUrl + path,
         queryParameters: params,
@@ -72,22 +79,21 @@ class NetManager {
     return (_parser ?? parser).parse<T>(response);
   }
 
-
   Future<NetResult<T>> post<T>(String path, dynamic requestBody,
-      {String baseUrl, Map<String, dynamic> queryParameters,
-        Options options,
-        CancelToken cancelToken,
-        ProgressCallback onSendProgress,
-        ProgressCallback onReceiveProgress, Parser parser}) async {
-    Response response = await _dio.post(
-        (baseUrl ?? _baseUrl) + path,
+      {String baseUrl,
+      Map<String, dynamic> queryParameters,
+      Options options,
+      CancelToken cancelToken,
+      ProgressCallback onSendProgress,
+      ProgressCallback onReceiveProgress,
+      Parser parser}) async {
+    Response response = await _dio.post((baseUrl ?? _baseUrl) + path,
         data: requestBody,
         queryParameters: queryParameters,
         options: options,
         cancelToken: cancelToken,
         onSendProgress: onSendProgress,
-        onReceiveProgress: onReceiveProgress
-    );
+        onReceiveProgress: onReceiveProgress);
 
     if (_parser == null && parser == null) {
       throw Exception('没有配置数据解析器...');
@@ -95,16 +101,19 @@ class NetManager {
     return (_parser ?? parser).parse<T>(response);
   }
 
-
-  Future<NetResult<T>> upload<T>(String path, List<dynamic>files, {  List<MapEntry<String, String>>fields, String baseUrl, MultiPartFileConverter converter,String fileFlag:'file' }) async {
-
-
+  Future<NetResult<T>> upload<T>(String path, List<dynamic> files,
+      {List<MapEntry<String, String>> fields,
+      String baseUrl,
+      MultiPartFileConverter converter,
+      String fileFlag: 'file'}) async {
     if (files == null || files.length == 0) {
       print('upload 上传文件集合为空！！');
-      return NetResult<T>()..errorMsg='upload 上传文件集合为空！！'..errorCode=0x998855;
+      return NetResult<T>()
+        ..errorMsg = 'upload 上传文件集合为空！！'
+        ..errorCode = 0x998855;
     }
     var formData = FormData();
-    if (fields != null&&fields.length>0) {
+    if (fields != null && fields.length > 0) {
       formData.fields.addAll(fields);
     }
 
@@ -122,27 +131,23 @@ class NetManager {
       formData.files.add(MapEntry(fileFlag, value));
     });
 
-    Response response = await _dio.post((baseUrl ?? _baseUrl) + path,
+    Response response = await _dio.post(
+      (baseUrl ?? _baseUrl) + path,
       data: formData,
     );
     return _parser.parse<T>(response);
   }
-
-
 }
 
 class NetBuilder {
-
-
   String _ip;
   String _port;
   int _connectTimeout;
   int _receiveTimeout;
-  Map<String,dynamic> _headers;
+  Map<String, dynamic> _headers;
   Interceptor _interceptor;
   Parser _parser;
   MultiPartFileConverter _converter;
-
 
   ///设置代理
   NetBuilder setProxy(String ip, String port) {
@@ -171,10 +176,9 @@ class NetBuilder {
 
   ///添加拦截器
   NetBuilder addInterceptor(Interceptor interceptor) {
-    _interceptor= interceptor;
+    _interceptor = interceptor;
     return this;
   }
-
 
   ///添设置MultiPartFile转换器
   NetBuilder setMultiPartFileConverter(MultiPartFileConverter converter) {
@@ -189,38 +193,38 @@ class NetBuilder {
   }
 
   ///构建
-   build(String baseUrl, {Parser parser, MultiPartFileConverter converter}) {
-
-    if (NetManager._instance ==null) {
+  build(String baseUrl, {Parser parser, MultiPartFileConverter converter}) {
+    if (NetManager._instance == null) {
       NetManager._instance = NetManager._internal();
     }
-    NetManager net =  NetManager._instance;
+    NetManager net = NetManager._instance;
+
+    net._setbadCertificate();
 
     if (_ip != null && _port != null) {
       net._setProxy(_ip, _port);
     }
 
-    if(_connectTimeout!=null){
+    if (_connectTimeout != null) {
       net._dio.options.connectTimeout = _connectTimeout;
     }
 
-    if(_receiveTimeout!=null){
+    if (_receiveTimeout != null) {
       net._dio.options.receiveTimeout = _receiveTimeout;
     }
 
-    if(_headers!=null){
+    if (_headers != null) {
       _headers.forEach((key, value) {
         net._dio.options.headers[key] = value;
       });
-
     }
 
-    if(_interceptor!=null){
+    if (_interceptor != null) {
       net._dio.interceptors.add(_interceptor);
     }
 
-    net._converter =converter?? _converter;
-    net._parser = parser??_parser;
+    net._converter = converter ?? _converter;
+    net._parser = parser ?? _parser;
     net._baseUrl = baseUrl;
   }
 }
