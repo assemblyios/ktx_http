@@ -9,7 +9,7 @@ import 'multipartfile_covert.dart';
 class NetManager {
   String _baseUrl;
   Dio _dio;
-  int _defaultConnectTimeout = 5000;
+  int _defaultConnectTimeout = 60000;
   int _defaultReceiveTimeout = 100000;
   String _contentType = "application/json";
   String _accept = "application/json";
