@@ -59,6 +59,29 @@ class NetManager {
     };
   }
 
+  updateDioProxy(String ip) {
+    _dio.httpClientAdapter = (DefaultHttpClientAdapter()
+      ..onHttpClientCreate = (HttpClient client) {
+        client.findProxy = (Uri uri) {
+          return 'PROXY $ip:8888';
+        };
+        client.badCertificateCallback =
+            (X509Certificate cert, String host, int port) {
+          return true;
+        };
+      });
+  }
+
+  resetDioProxy() {
+    _dio.httpClientAdapter = (DefaultHttpClientAdapter()
+      ..onHttpClientCreate = (HttpClient client) {
+        client.badCertificateCallback =
+            (X509Certificate cert, String host, int port) {
+          return true;
+        };
+      });
+  }
+
   Future<NetResult<T>> get<T>(String path,
       {Map<String, dynamic> params,
       String baseUrl,
