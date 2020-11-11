@@ -82,6 +82,11 @@ class NetManager {
       });
   }
 
+  setBaseUrl(String url) {
+    NetManager net = NetManager._instance;
+    net._baseUrl = url;
+  }
+
   Future<NetResult<T>> get<T>(String path,
       {Map<String, dynamic> params,
       String baseUrl,
